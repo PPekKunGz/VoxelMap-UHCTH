@@ -45,6 +45,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.border.BorderStatus;
 import net.minecraft.world.level.border.WorldBorder;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
@@ -643,19 +644,28 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
 
             if (mapOptions.worldBorder) {
-                WorldBorder worldBorder = minecraft.level.getWorldBorder();
                 float scale = 1.0f / (float) minecraft.getWindow().getGuiScale() / mapToGui;
 
-                float x1 = (float) (worldBorder.getMinX());
-                float z1 = (float) (worldBorder.getMinZ());
-                float x2 = (float) (worldBorder.getMaxX());
-                float z2 = (float) (worldBorder.getMaxZ());
+                // ใช้ UHCBorder แทน vanilla WorldBorder
+                net.kimkung.dmsuhc.client.event.border.UHCBorderAPI.BorderExtent extent = net.kimkung.dmsuhc.client.event.border.UHCBorder.getExtent();
 
-                VoxelMapGuiGraphics.fillGradient(graphics, x1 - scale, z1 - scale, x2 + scale, z1 + scale, 0xffff0000, 0xffff0000, 0xffff0000, 0xffff0000);
-                VoxelMapGuiGraphics.fillGradient(graphics, x1 - scale, z2 - scale, x2 + scale, z2 + scale, 0xffff0000, 0xffff0000, 0xffff0000, 0xffff0000);
+                float x1 = (float) extent.getMinX(0f);
+                float z1 = (float) extent.getMinZ(0f);
+                float x2 = (float) extent.getMaxX(0f);
+                float z2 = (float) extent.getMaxZ(0f);
 
-                VoxelMapGuiGraphics.fillGradient(graphics, x1 - scale, z1 - scale, x1 + scale, z2 + scale, 0xffff0000, 0xffff0000, 0xffff0000, 0xffff0000);
-                VoxelMapGuiGraphics.fillGradient(graphics, x2 - scale, z1 - scale, x2 + scale, z2 + scale, 0xffff0000, 0xffff0000, 0xffff0000, 0xffff0000);
+                // เลือกสีตาม border status
+                BorderStatus status = net.kimkung.dmsuhc.client.event.border.UHCBorder.getStatus();
+                int borderColor = switch (status) {
+                    case SHRINKING -> 0xffff4444;
+                    case GROWING   -> 0xff44aaff;
+                    default        -> 0xff00ff44;
+                };
+
+                VoxelMapGuiGraphics.fillGradient(graphics, x1 - scale, z1 - scale, x2 + scale, z1 + scale, borderColor, borderColor, borderColor, borderColor);
+                VoxelMapGuiGraphics.fillGradient(graphics, x1 - scale, z2 - scale, x2 + scale, z2 + scale, borderColor, borderColor, borderColor, borderColor);
+                VoxelMapGuiGraphics.fillGradient(graphics, x1 - scale, z1 - scale, x1 + scale, z2 + scale, borderColor, borderColor, borderColor, borderColor);
+                VoxelMapGuiGraphics.fillGradient(graphics, x2 - scale, z1 - scale, x2 + scale, z2 + scale, borderColor, borderColor, borderColor, borderColor);
             }
 
             float cursorX;
