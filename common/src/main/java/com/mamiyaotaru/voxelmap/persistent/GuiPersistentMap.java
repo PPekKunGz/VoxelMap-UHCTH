@@ -26,6 +26,7 @@ import com.mamiyaotaru.voxelmap.util.Waypoint;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
+import net.kimkung.dmsuhc.client.sskin.SSkinsAPI;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -44,6 +45,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.PlayerModelPart;
+import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.border.BorderStatus;
 import net.minecraft.world.level.border.WorldBorder;
@@ -136,6 +138,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     private boolean keyRightPressed;
     private static final int ICON_WIDTH = 16;
     private static final int ICON_HEIGHT = 16;
+    private final java.util.Map<String, Identifier> playerSkinCache = new java.util.HashMap<>();
 
     public GuiPersistentMap(Screen parent) {
         this.lastScreen = parent;
@@ -811,6 +814,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             drawPlayer(graphics, voxelmapSkinLocation, playerX, playerZ, mouseX, mouseY);
         }
 
+        String myName = minecraft.player != null ? minecraft.player.getName().getString() : "";
+        for (com.mamiyaotaru.voxelmap.uhc.PlayerTracker.TrackedPlayer tp : com.mamiyaotaru.voxelmap.uhc.PlayerTracker.getPlayers()) {
+            if (tp.name().equals(myName)) continue;
+            playerSkinCache.remove(tp.name(), null);
+            drawOtherPlayer(graphics, tp, mouseX, mouseY);
+        }
+
         if (System.currentTimeMillis() - this.timeOfLastKBInput < 2000L) {
             int scWidth = minecraft.getWindow().getGuiScaledWidth();
             int scHeight = minecraft.getWindow().getGuiScaledHeight();
@@ -855,9 +865,160 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
     }
 
+    private void drawOtherPlayer(GuiGraphicsExtractor graphics, com.mamiyaotaru.voxelmap.uhc.PlayerTracker.TrackedPlayer tp, int mouseX, int mouseY) {
+        float playerX = (float) tp.x();
+        float playerZ = (float) tp.z();
+        String name = tp.name();
+        int teamBorderColor = getPlayerTeamBorderColor(name);
+        float zoomScale = Mth.clamp(this.mapToGui * 1.2F, 0.25F, 0.75F);
+        float headWidth = ICON_WIDTH * zoomScale;
+        float headHeight = ICON_HEIGHT * zoomScale;
+        int x = this.width / 2;
+        int y = this.height / 2;
+        int borderX = x - 4;
+        int borderY = y - this.top;
+
+        double wayX = this.mapCenterX - (this.oldNorth ? -playerZ : playerX);
+        double wayY = this.mapCenterZ - (this.oldNorth ? playerX : playerZ);
+        float locate = (float) Math.atan2(wayX, wayY);
+        float hypot = (float) Math.sqrt(wayX * wayX + wayY * wayY) * mapToGui;
+
+        double dispX = hypot * Math.sin(locate);
+        double dispY = hypot * Math.cos(locate);
+        boolean far = Math.abs(dispX) > borderX || Math.abs(dispY) > borderY;
+        if (far) {
+            hypot *= (float) Math.min(borderX / Math.abs(dispX), borderY / Math.abs(dispY));
+        }
+
+        Identifier skinId = playerSkinCache.computeIfAbsent(name, n -> {
+            try {
+                // 1. ลองดึงจาก UUID ก่อน
+                if (tp.uuid() != null && minecraft.getConnection() != null) {
+                    var info = minecraft.getConnection().getPlayerInfo(tp.uuid());
+
+                    if (info != null) {
+                        try {
+                            return info.getSkin().body().id();
+                        } catch (Exception ignored) {}
+                    }
+                }
+
+                // 2. ลองจาก SSkinsAPI
+                var profile = ResolvableProfile.createUnresolved(name);
+                var playerInfo = minecraft.playerSkinRenderCache().getOrDefault(profile);
+
+                if (playerInfo != null) {
+                    try {
+                        var skinCache = SSkinsAPI.skinCache.get(
+                                playerInfo.gameProfile().id()
+                        );
+
+                        if (skinCache != null) {
+                            return skinCache.getSkin().id();
+                        }
+                    } catch (Exception ignored) {}
+
+                    // 3. fallback vanilla cached skin
+                    try {
+                        return playerInfo.playerSkin().body().id();
+                    } catch (Exception ignored) {}
+                }
+
+            } catch (Exception ignored) {}
+
+            return null;
+        });
+
+        graphics.pose().pushMatrix();
+        if (far) {
+            graphics.pose().translate(x, y);
+            graphics.pose().rotate(-locate);
+            graphics.pose().translate(0.0F, -hypot);
+            graphics.pose().rotate(locate);
+            graphics.pose().translate(-x, -y);
+        } else {
+            graphics.pose().rotate(-locate);
+            graphics.pose().translate(0.0F, -hypot);
+            graphics.pose().rotate(locate);
+        }
+
+        if (skinId != null) {
+            // outline ก่อน
+            VoxelMapGuiGraphics.fillGradient(
+                    graphics,
+                    x - headWidth / 2.0F - 1,
+                    y - headHeight / 2.0F - 1,
+                    x + headWidth / 2.0F + 1,
+                    y + headHeight / 2.0F + 1,
+                    teamBorderColor,
+                    teamBorderColor,
+                    teamBorderColor,
+                    teamBorderColor
+            );
+
+            // แล้วค่อยวาดหัว
+            VoxelMapGuiGraphics.blitFloat(
+                    graphics,
+                    RenderPipelines.GUI_TEXTURED,
+                    skinId,
+                    x - headWidth / 2.0F,
+                    y - headHeight / 2.0F,
+                    headWidth,
+                    headHeight,
+                    8.0F / 64.0F,
+                    16.0F / 64.0F,
+                    8.0F / 64.0F,
+                    16.0F / 64.0F,
+                    0xFFFFFFFF
+            );
+        } else {
+            // fallback สีแดงถ้าไม่มี skin
+            VoxelMapGuiGraphics.fillGradient(
+                    graphics,
+                    x - headWidth / 2.0F,
+                    y - headHeight / 2.0F,
+                    x + headWidth / 2.0F,
+                    y + headHeight / 2.0F,
+                    0xffff4444,
+                    0xffff4444,
+                    0xffff4444,
+                    0xffff4444
+            );
+        }
+
+        if (this.mapToGui > 0.55F) {
+            writeCentered(
+                    graphics,
+                    name,
+                    x,
+                    y + (int)(headHeight / 2) + 2,
+                    0xFFFFFF,
+                    true
+            );
+        }
+//        writeCentered(graphics, name, x, y + (int)(headHeight / 2) + 2, 0xFFFFFF, true);
+        graphics.pose().popMatrix();
+    }
+
     private boolean drawPlayer(GuiGraphicsExtractor graphics, Identifier skin, float playerX, float playerZ, int mouseX, int mouseY) {
-        float headWidth = ICON_WIDTH * 0.75F;
-        float headHeight = ICON_HEIGHT * 0.75F;
+        float zoomScale = Mth.clamp(this.mapToGui * 1.2F, 0.25F, 0.75F);
+
+        float headWidth = ICON_WIDTH * zoomScale;
+        float headHeight = ICON_HEIGHT * zoomScale;
+        int myBorderColor = getPlayerTeamBorderColor(
+                minecraft.player.getName().getString()
+        );
+
+        var team = minecraft.player.getTeam();
+        if (team != null) {
+            String teamName = team.getName();
+
+            if (teamName.equalsIgnoreCase("Admin")
+                    || teamName.equalsIgnoreCase("Dimension")
+                    || teamName.equalsIgnoreCase("Spectator")) {
+                return false;
+            }
+        }
 
         int x = this.width / 2;
         int y = this.height / 2;
@@ -894,8 +1055,11 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         float screenX = guiVector.x();
         float screenY = guiVector.y();
 
-        boolean isHovered = mouseX >= screenX - ICON_WIDTH / 2.0F && mouseX <= screenX + ICON_WIDTH / 2.0F
-                && mouseY >= screenY - ICON_HEIGHT / 2.0F && mouseY <= screenY + ICON_HEIGHT / 2.0F;
+        boolean isHovered =
+                mouseX >= screenX - headWidth / 2.0F &&
+                        mouseX <= screenX + headWidth / 2.0F &&
+                        mouseY >= screenY - headHeight / 2.0F &&
+                        mouseY <= screenY + headHeight / 2.0F;
         if (isHovered) {
             graphics.requestCursor(CursorTypes.CROSSHAIR);
             if (options.showCoordinates) {
@@ -903,11 +1067,45 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             }
         }
 
+        VoxelMapGuiGraphics.fillGradient(
+                graphics,
+                x - headWidth / 2.0F - 0.5F,
+                y - headHeight / 2.0F - 0.5F,
+                x + headWidth / 2.0F + 0.5F,
+                y + headHeight / 2.0F + 0.5F,
+                myBorderColor,
+                myBorderColor,
+                myBorderColor,
+                myBorderColor
+        );
         VoxelMapGuiGraphics.blitFloat(graphics, RenderPipelines.GUI_TEXTURED, skin, x - headWidth / 2.0F, y - headHeight / 2.0F, headWidth, headHeight, 0, 1, 0, 1, 0xFFFFFFFF);
 
         graphics.pose().popMatrix();
 
         return isHovered;
+    }
+
+    private int getPlayerTeamBorderColor(String playerName) {
+        try {
+            if (minecraft.level == null) return 0xFFFFFFFF;
+
+            var scoreboard = minecraft.level.getScoreboard();
+            var team = scoreboard.getPlayersTeam(playerName);
+
+            if (team == null) return 0xFFFFFFFF;
+
+            ChatFormatting formatting = team.getColor();
+
+            // ไม่มีสี
+            if (formatting == null || formatting.getColor() == null) {
+                return 0xFFFFFFFF;
+            }
+
+            // แปลงเป็น ARGB
+            return 0xFF000000 | formatting.getColor();
+        } catch (Exception ignored) {
+            return 0xFFFFFFFF;
+        }
     }
 
     private boolean drawWaypoint(GuiGraphicsExtractor graphics, Waypoint waypoint, TextureAtlas textureAtlas, Sprite icon, boolean isHighlighted, int color, int mouseX, int mouseY) {
@@ -1028,6 +1226,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             this.closed = true;
             this.persistentMap.getRegions(0, -1, 0, -1);
             this.regions = new CachedRegion[0];
+            playerSkinCache.clear();
         }
     }
 
