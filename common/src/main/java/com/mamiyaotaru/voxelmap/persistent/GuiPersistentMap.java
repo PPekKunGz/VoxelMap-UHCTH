@@ -26,6 +26,7 @@ import com.mamiyaotaru.voxelmap.util.Waypoint;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
+import net.kimkung.dmsuhc.client.event.border.UHCBorder;
 import net.kimkung.dmsuhc.client.sskin.SSkinsAPI;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -649,16 +650,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             if (mapOptions.worldBorder) {
                 float scale = 1.0f / (float) minecraft.getWindow().getGuiScale() / mapToGui;
 
-                // ใช้ UHCBorder แทน vanilla WorldBorder
-                net.kimkung.dmsuhc.client.event.border.UHCBorderAPI.BorderExtent extent = net.kimkung.dmsuhc.client.event.border.UHCBorder.getExtent();
-
-                float x1 = (float) extent.getMinX(0f);
-                float z1 = (float) extent.getMinZ(0f);
-                float x2 = (float) extent.getMaxX(0f);
-                float z2 = (float) extent.getMaxZ(0f);
+                float x1 = (float) UHCBorder.getMinX(0f);
+                float z1 = (float) UHCBorder.getMinZ(0f);
+                float x2 = (float) UHCBorder.getMaxX(0f);
+                float z2 = (float) UHCBorder.getMaxZ(0f);
 
                 // เลือกสีตาม border status
-                BorderStatus status = net.kimkung.dmsuhc.client.event.border.UHCBorder.getStatus();
+                BorderStatus status = UHCBorder.getStatus();
                 int borderColor = switch (status) {
                     case SHRINKING -> 0xffff4444;
                     case GROWING   -> 0xff44aaff;
