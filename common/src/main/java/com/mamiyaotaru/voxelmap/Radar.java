@@ -2,7 +2,6 @@ package com.mamiyaotaru.voxelmap;
 
 import com.mamiyaotaru.voxelmap.entityrender.EntityMapImageManager;
 import com.mamiyaotaru.voxelmap.interfaces.AbstractRadar;
-import com.mamiyaotaru.voxelmap.uhc.BuildConfig;
 import com.mamiyaotaru.voxelmap.util.Contact;
 import com.mamiyaotaru.voxelmap.util.MinimapContext;
 import com.mamiyaotaru.voxelmap.util.RenderUtils;
@@ -110,10 +109,6 @@ public class Radar extends AbstractRadar {
                 continue;
             }
 
-            if (!BuildConfig.DEV && contact.category == VoxelMapMobCategory.PLAYER) {
-                if (!isSameTeamAsLocalPlayer(contact)) continue;
-            }
-
             try {
                 matrixStack.pushMatrix();
                 applyContactTransform(matrixStack, contact, x, y, scScale);
@@ -180,18 +175,6 @@ public class Radar extends AbstractRadar {
         }
 
         matrixStack.popMatrix();
-    }
-
-    private boolean isSameTeamAsLocalPlayer(Contact contact) {
-        var mc = net.minecraft.client.Minecraft.getInstance();
-        if (mc.level == null || mc.player == null) return false;
-
-        var scoreboard = mc.level.getScoreboard();
-        var myTeam = scoreboard.getPlayersTeam(mc.player.getName().getString());
-        var otherTeam = scoreboard.getPlayersTeam(contact.entity.getName().getString());
-
-        if (myTeam == null || otherTeam == null) return false;
-        return myTeam.getName().equals(otherTeam.getName());
     }
 
     private Component getSimplifiedName(Contact contact) {

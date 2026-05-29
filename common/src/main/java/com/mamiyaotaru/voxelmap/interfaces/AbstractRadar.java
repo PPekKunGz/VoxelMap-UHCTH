@@ -3,7 +3,7 @@ package com.mamiyaotaru.voxelmap.interfaces;
 import com.mamiyaotaru.voxelmap.MapSettingsManager;
 import com.mamiyaotaru.voxelmap.RadarSettingsManager;
 import com.mamiyaotaru.voxelmap.VoxelConstants;
-import com.mamiyaotaru.voxelmap.uhc.BuildConfig;
+import com.mamiyaotaru.voxelmap.uhc.UHCTeamUtils;
 import com.mamiyaotaru.voxelmap.util.Contact;
 import com.mamiyaotaru.voxelmap.util.MinimapContext;
 import com.mamiyaotaru.voxelmap.util.VoxelMapMobCategory;
@@ -26,6 +26,7 @@ public abstract class AbstractRadar {
     protected MinimapContext minimapContext;
 
     protected final ArrayList<Contact> contacts = new ArrayList<>(40);
+    private static final java.util.Set<String> DEV_TEAMS = java.util.Set.of("Admin", "Spectator", "Dimension");
     private int timer = 500;
     private int calculateMobsPart;
 
@@ -148,26 +149,15 @@ public abstract class AbstractRadar {
         return switch (VoxelMapMobCategory.forEntity(entity)) {
             case PLAYER -> {
                 if (!playersAllowed) yield false;
-                if (BuildConfig.DEV) {
-                    yield isSameTeamAsLocalPlayer(entity);
-                }
-
-                yield true;
+                yield isVisiblePlayer(entity);
             }
             case HOSTILE -> mobsAllowed && radarOptions.showHostiles;
             case NEUTRAL -> mobsAllowed && radarOptions.showNeutrals;
         };
     }
 
-    private boolean isSameTeamAsLocalPlayer(Entity entity) {
-        if (minecraft.level == null || minecraft.player == null) return false;
-
-        var scoreboard = minecraft.level.getScoreboard();
-        var myTeam = scoreboard.getPlayersTeam(minecraft.player.getName().getString());
-        var otherTeam = scoreboard.getPlayersTeam(entity.getName().getString());
-
-        if (myTeam == null || otherTeam == null) return false;
-        return myTeam.getName().equals(otherTeam.getName());
+    private boolean isVisiblePlayer(Entity entity) {
+        return UHCTeamUtils.isVisiblePlayer(entity.getName().getString());
     }
 
     protected float getEntityMaxHeight(Entity entity) {

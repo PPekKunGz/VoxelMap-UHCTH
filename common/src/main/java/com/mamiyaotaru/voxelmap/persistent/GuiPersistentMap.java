@@ -14,7 +14,7 @@ import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiScreen;
 import com.mamiyaotaru.voxelmap.interfaces.AbstractMapData;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
-import com.mamiyaotaru.voxelmap.uhc.BuildConfig;
+import com.mamiyaotaru.voxelmap.uhc.UHCTeamUtils;
 import com.mamiyaotaru.voxelmap.util.BackgroundImageInfo;
 import com.mamiyaotaru.voxelmap.util.BiomeMapData;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
@@ -50,7 +50,6 @@ import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.border.BorderStatus;
-import net.minecraft.world.level.border.WorldBorder;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 
@@ -816,11 +815,7 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         String myName = minecraft.player != null ? minecraft.player.getName().getString() : "";
         for (com.mamiyaotaru.voxelmap.uhc.PlayerTracker.TrackedPlayer tp : com.mamiyaotaru.voxelmap.uhc.PlayerTracker.getPlayers()) {
             if (tp.name().equals(myName)) continue;
-
-            if (!BuildConfig.DEV) {
-                if (!isSameTeam(tp.name())) continue;
-            }
-
+            if (!UHCTeamUtils.isVisiblePlayer(tp.name())) continue;
             playerSkinCache.remove(tp.name(), null);
             drawOtherPlayer(graphics, tp, mouseX, mouseY);
         }
@@ -867,18 +862,6 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             graphics.text(this.getFont(), Component.translatable("worldmap.disabled"), this.sideMargin, 16, 0xFFFFFFFF);
         }
         super.extractRenderState(graphics, mouseX, mouseY, delta);
-    }
-
-    private boolean isSameTeam(String otherPlayerName) {
-        if (minecraft.level == null || minecraft.player == null) return false;
-
-        var scoreboard = minecraft.level.getScoreboard();
-        var myTeam = scoreboard.getPlayersTeam(minecraft.player.getName().getString());
-        var otherTeam = scoreboard.getPlayersTeam(otherPlayerName);
-
-        if (myTeam == null || otherTeam == null) return false;
-
-        return myTeam.getName().equals(otherTeam.getName());
     }
 
     private void drawOtherPlayer(GuiGraphicsExtractor graphics, com.mamiyaotaru.voxelmap.uhc.PlayerTracker.TrackedPlayer tp, int mouseX, int mouseY) {
