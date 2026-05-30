@@ -143,6 +143,12 @@ public abstract class AbstractRadar {
             return false;
         }
 
+        // เช็ค dimension ตรงกัน
+        if (minecraft.player != null &&
+                !entity.level().dimension().equals(minecraft.player.level().dimension())) {
+            return false;
+        }
+
         boolean playersAllowed = radarOptions.radarAllowed || radarOptions.radarPlayersAllowed;
         boolean mobsAllowed = radarOptions.radarAllowed || radarOptions.radarMobsAllowed;
 

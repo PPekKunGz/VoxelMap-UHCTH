@@ -13,7 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PlayerTracker {
 
-    public record TrackedPlayer(String name, double x, double y, double z, java.util.UUID uuid) {}
+    public record TrackedPlayer(String name, double x, double y, double z, java.util.UUID uuid, String dimension) {}
 
     private static final List<TrackedPlayer> players = new CopyOnWriteArrayList<>();
 
@@ -39,7 +39,8 @@ public class PlayerTracker {
                                 long msb = buf.readLong();
                                 long lsb = buf.readLong();
                                 java.util.UUID uuid = new java.util.UUID(msb, lsb);
-                                result.add(new TrackedPlayer(name, x, y, z, uuid));
+                                String dimension = buf.isReadable() ? buf.readUtf() : "minecraft:overworld";
+                                result.add(new TrackedPlayer(name, x, y, z, uuid, dimension));
                             }
                             return new PlayerListPayload(result);
                         }

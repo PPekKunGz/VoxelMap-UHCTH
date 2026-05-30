@@ -813,8 +813,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         String myName = minecraft.player != null ? minecraft.player.getName().getString() : "";
+        String myDimension = minecraft.player != null ? minecraft.player.level().dimension().identifier().toString(): "";
         for (com.mamiyaotaru.voxelmap.uhc.PlayerTracker.TrackedPlayer tp : com.mamiyaotaru.voxelmap.uhc.PlayerTracker.getPlayers()) {
             if (tp.name().equals(myName)) continue;
+            if (!tp.dimension().equals(myDimension)) continue;
             if (!UHCTeamUtils.isVisiblePlayer(tp.name())) continue;
             playerSkinCache.remove(tp.name(), null);
             drawOtherPlayer(graphics, tp, mouseX, mouseY);
