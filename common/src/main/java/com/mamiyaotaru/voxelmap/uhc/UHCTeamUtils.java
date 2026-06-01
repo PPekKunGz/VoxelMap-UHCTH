@@ -1,5 +1,6 @@
 package com.mamiyaotaru.voxelmap.uhc;
 
+import com.mamiyaotaru.voxelmap.VoxelConstants;
 import net.minecraft.client.Minecraft;
 
 public final class UHCTeamUtils {
@@ -20,12 +21,27 @@ public final class UHCTeamUtils {
 
         boolean iAmDev = DEV_TEAMS.stream().anyMatch(t -> t.equalsIgnoreCase(myTeamName));
 
+        boolean result;
         if (iAmDev) {
-            if (DEV_TEAMS.stream().anyMatch(t -> t.equalsIgnoreCase(otherTeamName))) return false;
-            return !myTeamName.equalsIgnoreCase(otherTeamName);
+            if (DEV_TEAMS.stream().anyMatch(t -> t.equalsIgnoreCase(otherTeamName))) {
+                result = false;
+            } else {
+                result = !myTeamName.equalsIgnoreCase(otherTeamName);
+            }
         } else {
-            if (myTeamName.isEmpty() || otherTeamName.isEmpty()) return false;
-            return myTeamName.equalsIgnoreCase(otherTeamName);
+            if (myTeamName.isEmpty() || otherTeamName.isEmpty()) {
+                result = false;
+            } else {
+                result = myTeamName.equalsIgnoreCase(otherTeamName);
+            }
         }
+
+//        VoxelConstants.getLogger().info(
+//                "isVisible check: me=" + myName + "(" + myTeamName + ")" +
+//                        " other=" + otherPlayerName + "(" + otherTeamName + ")" +
+//                        " iAmDev=" + iAmDev + " result=" + result
+//        );
+
+        return result;
     }
 }

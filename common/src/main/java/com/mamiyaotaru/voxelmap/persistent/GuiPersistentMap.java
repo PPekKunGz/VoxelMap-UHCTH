@@ -14,6 +14,7 @@ import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiScreen;
 import com.mamiyaotaru.voxelmap.interfaces.AbstractMapData;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
+import com.mamiyaotaru.voxelmap.uhc.PlayerTracker;
 import com.mamiyaotaru.voxelmap.uhc.UHCTeamUtils;
 import com.mamiyaotaru.voxelmap.util.BackgroundImageInfo;
 import com.mamiyaotaru.voxelmap.util.BiomeMapData;
@@ -813,12 +814,17 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         }
 
         String myName = minecraft.player != null ? minecraft.player.getName().getString() : "";
-        String myDimension = minecraft.player != null ? minecraft.player.level().dimension().identifier().toString(): "";
+        String myDimension = minecraft.player != null ? minecraft.player.level().dimension().identifier().toString() : "";
+
+//        for (com.mamiyaotaru.voxelmap.uhc.PlayerTracker.TrackedPlayer tp : com.mamiyaotaru.voxelmap.uhc.PlayerTracker.getPlayers()) {
+//            VoxelConstants.getLogger().info("TrackedPlayer: " + tp.name() + " dim=" + tp.dimension());
+//        }
+
         for (com.mamiyaotaru.voxelmap.uhc.PlayerTracker.TrackedPlayer tp : com.mamiyaotaru.voxelmap.uhc.PlayerTracker.getPlayers()) {
             if (tp.name().equals(myName)) continue;
-            if (!tp.dimension().equals(myDimension)) continue;
+            if (!normalizeDimension(tp.dimension()).equals(myDimension)) continue;
             if (!UHCTeamUtils.isVisiblePlayer(tp.name())) continue;
-            playerSkinCache.remove(tp.name(), null);
+            playerSkinCache.remove(tp.name());
             drawOtherPlayer(graphics, tp, mouseX, mouseY);
         }
 
@@ -1432,5 +1438,13 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
 
     private void writeCentered(GuiGraphicsExtractor graphics, Component text, float x, float y, int color, boolean shadow) {
         graphics.text(minecraft.font, text, (int) x - (textWidth(text) / 2), (int) y, color, shadow);
+    }
+
+    private String normalizeDimension(String dim) {
+        return switch (dim.toLowerCase()) {
+            case "nether", "the_nether", "minecraft:the_nether" -> "minecraft:the_nether";
+            case "end", "the_end", "minecraft:the_end" -> "minecraft:the_end";
+            default -> "minecraft:overworld";
+        };
     }
 }
