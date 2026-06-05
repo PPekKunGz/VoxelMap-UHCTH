@@ -14,6 +14,7 @@ import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiScreen;
 import com.mamiyaotaru.voxelmap.interfaces.AbstractMapData;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
+import com.mamiyaotaru.voxelmap.uhc.AirdropTracker;
 import com.mamiyaotaru.voxelmap.uhc.PlayerTracker;
 import com.mamiyaotaru.voxelmap.uhc.RespawnTracker;
 import com.mamiyaotaru.voxelmap.uhc.UHCTeamUtils;
@@ -833,6 +834,10 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
             drawRespawnLocation(graphics, respawn);
         }
 
+        for (AirdropTracker.AirdropPoint airdrop : AirdropTracker.getAirdropPoints()) {
+            drawAirdropLocation(graphics, airdrop);
+        }
+
         if (System.currentTimeMillis() - this.timeOfLastKBInput < 2000L) {
             int scWidth = minecraft.getWindow().getGuiScaledWidth();
             int scHeight = minecraft.getWindow().getGuiScaledHeight();
@@ -877,7 +882,60 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
     }
 
-    private void drawRespawnLocation(GuiGraphicsExtractor graphics, RespawnTracker.TrackerRespawn respawn) {
+    protected void drawRespawnLocation(GuiGraphicsExtractor graphics, RespawnTracker.TrackerRespawn respawn) {
+        float pointX = (float) respawn.x();
+        float pointZ = (float) respawn.z();
+
+        int cx = this.width / 2;
+        int cy = this.height / 2;
+        int borderX = cx - 4;
+        int borderY = cy - this.top;
+
+        double wayX = this.mapCenterX - (this.oldNorth ? -pointZ : pointX);
+        double wayY = this.mapCenterZ - (this.oldNorth ? pointX : pointZ);
+        float locate = (float) Math.atan2(wayX, wayY);
+        float hypot = (float) Math.sqrt(wayX * wayX + wayY * wayY) * mapToGui;
+
+        double dispX = hypot * Math.sin(locate);
+        double dispY = hypot * Math.cos(locate);
+        boolean far = Math.abs(dispX) > borderX || Math.abs(dispY) > borderY;
+        if (far) {
+            hypot *= (float) Math.min(borderX / Math.abs(dispX), borderY / Math.abs(dispY));
+        }
+
+        float screenX = cx + (float) (hypot * Math.sin(-locate));
+        float screenY = cy - (float) (hypot * Math.cos(locate));
+
+        float dotSize = 4.0f;
+
+        // hover check
+        boolean isHovered = mouseX >= screenX - dotSize / 2.0F - 2 &&
+                mouseX <= screenX + dotSize / 2.0F + 2 &&
+                mouseY >= screenY - dotSize / 2.0F - 2 &&
+                mouseY <= screenY + dotSize / 2.0F + 2;
+
+        // outline ขาว — สว่างขึ้นเมื่อ hover
+        int outlineColor = isHovered ? 0xFFFFFF44 : 0xFFFFFFFF;
+        VoxelMapGuiGraphics.fillGradient(graphics,
+                screenX - dotSize / 2.0F - 1, screenY - dotSize / 2.0F - 1,
+                screenX + dotSize / 2.0F + 1, screenY + dotSize / 2.0F + 1,
+                outlineColor, outlineColor, outlineColor, outlineColor);
+
+        // จุดน้ำเงิน
+        VoxelMapGuiGraphics.fillGradient(graphics,
+                screenX - dotSize / 2.0F, screenY - dotSize / 2.0F,
+                screenX + dotSize / 2.0F, screenY + dotSize / 2.0F,
+                0xFF4488FF, 0xFF4488FF, 0xFF4488FF, 0xFF4488FF);
+
+        if (isHovered) {
+            graphics.requestCursor(CursorTypes.CROSSHAIR);
+            renderTooltip(graphics,
+                    Component.literal("X: " + (int) respawn.x() + ", Z: " + (int) respawn.z()),
+                    this.mouseX, this.mouseY);
+        }
+    }
+
+    protected void drawAirdropLocation(GuiGraphicsExtractor graphics, AirdropTracker.AirdropPoint respawn) {
         float pointX = (float) respawn.x();
         float pointZ = (float) respawn.z();
 
