@@ -191,7 +191,15 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
     @Override
     public void init() {
         this.oldNorth = mapOptions.oldNorth;
-        this.centerAt(this.options.mapX, this.options.mapZ);
+//        this.centerAt(this.options.mapX, this.options.mapZ);
+        if (this.options.mapX == 0 && this.options.mapZ == 0) {
+            this.centerAt(
+                    (int) GameVariableAccessShim.xCoordDouble(),
+                    (int) GameVariableAccessShim.zCoordDouble()
+            );
+        } else {
+            this.centerAt(this.options.mapX, this.options.mapZ);
+        }
         if (minecraft.screen == this) {
             this.closed = false;
         }
