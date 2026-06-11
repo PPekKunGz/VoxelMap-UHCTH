@@ -1,9 +1,7 @@
 package com.mamiyaotaru.voxelmap.fabric;
 
 import com.mamiyaotaru.voxelmap.VoxelConstants;
-import com.mamiyaotaru.voxelmap.uhc.AirdropTracker;
-import com.mamiyaotaru.voxelmap.uhc.PlayerTracker;
-import com.mamiyaotaru.voxelmap.uhc.RespawnTracker;
+import com.mamiyaotaru.voxelmap.uhc.*;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -20,5 +18,8 @@ public class VoxelmapFabricMod implements ClientModInitializer {
         PlayerTracker.init();
         RespawnTracker.init();
         AirdropTracker.init();
+        NextBorderTracker.init();
+        ClearTracker.init();
+//        PurgeMapTracker.init();
     }
 }

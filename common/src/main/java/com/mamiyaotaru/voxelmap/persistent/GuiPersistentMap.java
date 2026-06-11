@@ -14,10 +14,7 @@ import com.mamiyaotaru.voxelmap.gui.overridden.PopupGuiScreen;
 import com.mamiyaotaru.voxelmap.interfaces.AbstractMapData;
 import com.mamiyaotaru.voxelmap.textures.Sprite;
 import com.mamiyaotaru.voxelmap.textures.TextureAtlas;
-import com.mamiyaotaru.voxelmap.uhc.AirdropTracker;
-import com.mamiyaotaru.voxelmap.uhc.PlayerTracker;
-import com.mamiyaotaru.voxelmap.uhc.RespawnTracker;
-import com.mamiyaotaru.voxelmap.uhc.UHCTeamUtils;
+import com.mamiyaotaru.voxelmap.uhc.*;
 import com.mamiyaotaru.voxelmap.util.BackgroundImageInfo;
 import com.mamiyaotaru.voxelmap.util.BiomeMapData;
 import com.mamiyaotaru.voxelmap.util.CommandUtils;
@@ -678,6 +675,20 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 VoxelMapGuiGraphics.fillGradient(graphics, x1 - scale, z2 - scale, x2 + scale, z2 + scale, borderColor, borderColor, borderColor, borderColor);
                 VoxelMapGuiGraphics.fillGradient(graphics, x1 - scale, z1 - scale, x1 + scale, z2 + scale, borderColor, borderColor, borderColor, borderColor);
                 VoxelMapGuiGraphics.fillGradient(graphics, x2 - scale, z1 - scale, x2 + scale, z2 + scale, borderColor, borderColor, borderColor, borderColor);
+
+                if (NextBorderTracker.hasNextBorder()) {
+                    float half = (float) NextBorderTracker.getSize() / 2.0f;
+                    float nx1 = (float) NextBorderTracker.getCenterX() - half;
+                    float nz1 = (float) NextBorderTracker.getCenterZ() - half;
+                    float nx2 = (float) NextBorderTracker.getCenterX() + half;
+                    float nz2 = (float) NextBorderTracker.getCenterZ() + half;
+                    int nextColor = 0xFFFFAA00;
+
+                    VoxelMapGuiGraphics.fillGradient(graphics, nx1 - scale, nz1 - scale, nx2 + scale, nz1 + scale, nextColor, nextColor, nextColor, nextColor);
+                    VoxelMapGuiGraphics.fillGradient(graphics, nx1 - scale, nz2 - scale, nx2 + scale, nz2 + scale, nextColor, nextColor, nextColor, nextColor);
+                    VoxelMapGuiGraphics.fillGradient(graphics, nx1 - scale, nz1 - scale, nx1 + scale, nz2 + scale, nextColor, nextColor, nextColor, nextColor);
+                    VoxelMapGuiGraphics.fillGradient(graphics, nx2 - scale, nz1 - scale, nx2 + scale, nz2 + scale, nextColor, nextColor, nextColor, nextColor);
+                }
             }
 
             float cursorX;
