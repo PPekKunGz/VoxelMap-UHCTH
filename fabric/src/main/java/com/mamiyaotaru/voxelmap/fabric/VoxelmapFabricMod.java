@@ -20,6 +20,6 @@ public class VoxelmapFabricMod implements ClientModInitializer {
         AirdropTracker.init();
         NextBorderTracker.init();
         ClearTracker.init();
-//        PurgeMapTracker.init();
+        PurgeMapTracker.init();
     }
 }
