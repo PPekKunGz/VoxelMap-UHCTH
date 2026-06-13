@@ -676,12 +676,14 @@ public class GuiPersistentMap extends PopupGuiScreen implements IGuiWaypoints {
                 VoxelMapGuiGraphics.fillGradient(graphics, x1 - scale, z1 - scale, x1 + scale, z2 + scale, borderColor, borderColor, borderColor, borderColor);
                 VoxelMapGuiGraphics.fillGradient(graphics, x2 - scale, z1 - scale, x2 + scale, z2 + scale, borderColor, borderColor, borderColor, borderColor);
 
-                if (NextBorderTracker.hasNextBorder()) {
-                    float half = (float) NextBorderTracker.getSize() / 2.0f;
-                    float nx1 = (float) NextBorderTracker.getCenterX() - half;
-                    float nz1 = (float) NextBorderTracker.getCenterZ() - half;
-                    float nx2 = (float) NextBorderTracker.getCenterX() + half;
-                    float nz2 = (float) NextBorderTracker.getCenterZ() + half;
+                String myDimRaw = minecraft.player.level().dimension().identifier().toString();
+
+                if (NextBorderTracker.hasNextBorder(myDimRaw)) {
+                    float half = (float) NextBorderTracker.getSize(myDimRaw) / 2.0f;
+                    float nx1 = (float) NextBorderTracker.getCenterX(myDimRaw) - half;
+                    float nz1 = (float) NextBorderTracker.getCenterZ(myDimRaw) - half;
+                    float nx2 = (float) NextBorderTracker.getCenterX(myDimRaw) + half;
+                    float nz2 = (float) NextBorderTracker.getCenterZ(myDimRaw) + half;
                     int nextColor = 0xFFFFAA00;
 
                     VoxelMapGuiGraphics.fillGradient(graphics, nx1 - scale, nz1 - scale, nx2 + scale, nz1 + scale, nextColor, nextColor, nextColor, nextColor);

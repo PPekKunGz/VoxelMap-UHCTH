@@ -35,11 +35,22 @@ public class PurgeMapTracker {
                     System.out.println("[PurgeMapTracker] Received purge_map packet");
                     RespawnTracker.getRespawnPoints().clear();
                     AirdropTracker.getAirdropPoints().clear();
-                    com.mamiyaotaru.voxelmap.VoxelConstants
-                            .getVoxelMapInstance()
-                            .getPersistentMap()
-                            .purgeCachedRegions();
-                    System.out.println("[PurgeMapTracker] Map cache purged");
+                    NextBorderTracker.clear();
+
+                    try {
+                        var instance = com.mamiyaotaru.voxelmap.VoxelConstants.getVoxelMapInstance();
+                        System.out.println("[PurgeMapTracker] VoxelMap instance: " + (instance != null ? "OK" : "NULL"));
+                        if (instance != null) {
+                            var map = instance.getPersistentMap();
+                            System.out.println("[PurgeMapTracker] PersistentMap: " + (map != null ? "OK" : "NULL"));
+                            if (map != null) {
+                                map.purgeCachedRegions();
+                                System.out.println("[PurgeMapTracker] Map cache purged");
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.out.println("[PurgeMapTracker] Error: " + e.getMessage());
+                    }
                 })
         );
     }

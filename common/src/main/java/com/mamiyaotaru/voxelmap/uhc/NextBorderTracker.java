@@ -10,33 +10,53 @@ import net.minecraft.resources.Identifier;
 
 public class NextBorderTracker {
 
-    private static double centerX = 0;
-    private static double centerZ = 0;
-    private static double size = -1; // -1 = ไม่มี border ถัดไป
+    private static double overworldCenterX = 0, overworldCenterZ = 0, overworldSize = -1;
+    private static double netherCenterX = 0, netherCenterZ = 0, netherSize = -1;
 
-    public static double getCenterX() { return centerX; }
-    public static double getCenterZ() { return centerZ; }
-    public static double getSize() { return size; }
-    public static boolean hasNextBorder() { return size > 0; }
+    private static String normalizeDim(String dim) {
+        return dim.contains("nether") ? "nether" : "overworld";
+    }
 
-    public record NextBorderPayload(double cx, double cz, double sz) implements CustomPacketPayload {
+    public static boolean hasNextBorder(String dim) {
+        return normalizeDim(dim).equals("nether") ? netherSize > 0 : overworldSize > 0;
+    }
+
+    public static double getCenterX(String dim) {
+        return normalizeDim(dim).equals("nether") ? netherCenterX : overworldCenterX;
+    }
+
+    public static double getCenterZ(String dim) {
+        return normalizeDim(dim).equals("nether") ? netherCenterZ : overworldCenterZ;
+    }
+
+    public static double getSize(String dim) {
+        return normalizeDim(dim).equals("nether") ? netherSize : overworldSize;
+    }
+
+    public static void clear() {
+        overworldSize = -1;
+        netherSize = -1;
+    }
+
+    public record NextBorderPayload(double cx, double cz, double sz, String dim) implements CustomPacketPayload {
         public static final Type<NextBorderPayload> TYPE =
                 new Type<>(Identifier.fromNamespaceAndPath("dmsuhc", "next_border"));
 
         public static final StreamCodec<RegistryFriendlyByteBuf, NextBorderPayload> CODEC =
                 StreamCodec.of(
                         (buf, payload) -> {},
-                        buf -> new NextBorderPayload(buf.readDouble(), buf.readDouble(), buf.readDouble())
+                        buf -> new NextBorderPayload(
+                                buf.readDouble(),
+                                buf.readDouble(),
+                                buf.readDouble(),
+                                buf.isReadable() ? buf.readUtf() : "overworld"
+                        )
                 );
 
         @Override
         public Type<? extends CustomPacketPayload> type() {
             return TYPE;
         }
-    }
-
-    public static void clear() {
-        size = -1;
     }
 
     public static void init() {
@@ -46,17 +66,25 @@ public class NextBorderTracker {
         ClientPlayNetworking.registerGlobalReceiver(
                 NextBorderPayload.TYPE,
                 (payload, context) -> context.client().execute(() -> {
-                    centerX = payload.cx();
-                    centerZ = payload.cz();
-                    size    = payload.sz();
+                    if (normalizeDim(payload.dim()).equals("nether")) {
+                        netherCenterX = payload.cx();
+                        netherCenterZ = payload.cz();
+                        netherSize    = payload.sz();
+                    } else {
+                        overworldCenterX = payload.cx();
+                        overworldCenterZ = payload.cz();
+                        overworldSize    = payload.sz();
+                    }
+                    System.out.println("[NextBorderTracker] Received: cx=" + payload.cx() + " cz=" + payload.cz() + " size=" + payload.sz() + " dim=" + payload.dim());
                 })
         );
 
         ClientPlayConnectionEvents.DISCONNECT.register(
                 (handler, client) -> {
-                    centerX = 0;
-                    centerZ = 0;
-                    size = -1;
+                    overworldSize = -1;
+                    netherSize    = -1;
+                    overworldCenterX = overworldCenterZ = 0;
+                    netherCenterX    = netherCenterZ    = 0;
                 }
         );
     }
